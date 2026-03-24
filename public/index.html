@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CinemaHub — Афиша</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav>
+    <div class="nav-inner">
+      <a href="/" class="logo">Cinema<span>Hub</span></a>
+      <ul class="nav-links">
+        <li><a href="/" class="active">Афиша</a></li>
+        <li><a href="/sessions.html">Расписание</a></li>
+        <li><a href="/booking.html">Купить билет</a></li>
+        <li><a href="/reviews.html">Отзывы</a></li>
+        <li><a href="/stats.html">Статистика</a></li>
+        <li><a href="/add-movie.html">+ Фильм</a></li>
+      </ul>
+    </div>
+  </nav>
+  <div class="container">
+    <div class="page-header">
+      <h1>Сейчас в кино</h1>
+      <p>Выберите фильм и забронируйте билет онлайн</p>
+    </div>
+    <div class="movies-grid" id="movies-grid">
+      <div class="loading">Загрузка фильмов...</div>
+    </div>
+  </div>
+  <script>
+    async function safeFetch(url) {
+      var c = new AbortController();
+      var t = setTimeout(function() { c.abort(); }, 5000);
+      try {
+        var r = await fetch(url, { signal: c.signal });
+        clearTimeout(t);
+        if (r.status >= 500) { window.location.href = '/error.html'; return null; }
+        return r;
+      } catch(e) { clearTimeout(t); window.location.href = '/error.html'; return null; }
+    }
+    async function loadMovies() {
+      var grid = document.getElementById('movies-grid');
+      var res = await safeFetch('/api/movies');
+      if (!res) return;
+      try {
+        var movies = await res.json();
+        grid.innerHTML = movies.map(function(m) {
+          var poster = m.poster_url || 'https://placehold.co/300x450/1a1a2e/e94560?text=' + encodeURIComponent(m.title);
+          return '<a href="/movie.html?id=' + m.id + '" class="movie-card">' +
+            '<img class="poster" src="' + poster + '" alt="' + m.title + '" onerror="this.src=\'https://placehold.co/300x450/1a1a2e/e94560?text=NO+POSTER\'">' +
+            '<div class="info">' +
+              '<div class="title">' + m.title + '</div>' +
+              '<div class="meta"><span>' + m.genre + '</span><span>' + m.duration_min + ' мин</span></div>' +
+              '<div><span class="rating-badge">' + (m.rating ? '&#9733; ' + m.rating : 'Новинка') + '</span></div>' +
+            '</div></a>';
+        }).join('');
+      } catch(e) {
+        grid.innerHTML = '<p class="alert alert-error">Не удалось загрузить фильмы</p>';
+      }
+    }
+    loadMovies();
+  </script>
+</body>
+</html>

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CinemaHub — Купить билет</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav>
+    <div class="nav-inner">
+      <a href="/" class="logo">Cinema<span>Hub</span></a>
+      <ul class="nav-links">
+        <li><a href="/">Афиша</a></li>
+        <li><a href="/sessions.html">Расписание</a></li>
+        <li><a href="/booking.html" class="active">Купить билет</a></li>
+        <li><a href="/reviews.html">Отзывы</a></li>
+        <li><a href="/stats.html">Статистика</a></li>
+        <li><a href="/add-movie.html">+ Фильм</a></li>
+      </ul>
+    </div>
+  </nav>
+  <div class="container">
+    <div class="page-header">
+      <h1>Покупка билета</h1>
+      <p>Выберите сеанс и укажите данные для бронирования</p>
+    </div>
+    <div id="alert-container"></div>
+    <div class="form-card">
+      <div class="form-group"><label for="session">Сеанс</label><select id="session"><option value="">Загрузка...</option></select></div>
+      <div class="form-group"><label for="seat">Номер места</label><input type="number" id="seat" min="1" placeholder="Например: 15"></div>
+      <div class="form-group"><label for="name">Ваше имя</label><input type="text" id="name" placeholder="Иван Петров"></div>
+      <div class="form-group"><label for="email">Email</label><input type="email" id="email" placeholder="ivan@mail.ru"></div>
+      <button class="btn btn-primary" onclick="buyTicket()" id="buy-btn">Купить билет</button>
+    </div>
+  </div>
+  <script>
+    var params = new URLSearchParams(window.location.search);
+    var preSelected = params.get('session_id');
+    async function safeFetch(url,o){var c=new AbortController();var t=setTimeout(function(){c.abort();},5000);try{var r=await fetch(url,Object.assign({},o,{signal:c.signal}));clearTimeout(t);if(r.status>=500){window.location.href='/error.html';return null;}return r;}catch(e){clearTimeout(t);window.location.href='/error.html';return null;}}
+    async function loadSessions() {
+      var sel = document.getElementById('session');
+      var res = await safeFetch('/api/sessions');
+      if (!res) return;
+      try {
+        var sessions = await res.json();
+        sel.innerHTML = '<option value="">— Выберите сеанс —</option>' + sessions.map(function(s) {
+          var dt = new Date(s.start_time);
+          var selected = s.session_id == preSelected ? ' selected' : '';
+          return '<option value="' + s.session_id + '"' + selected + '>' +
+            s.movie_title + ' — ' + dt.toLocaleDateString('ru-RU') + ' ' + dt.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'}) +
+            ' — ' + s.hall_name + ' (' + s.hall_type + ') — ' + parseFloat(s.price).toFixed(0) + ' ₽ — ' + s.available_seats + ' мест</option>';
+        }).join('');
+      } catch(e) { sel.innerHTML = '<option>Ошибка загрузки</option>'; }
+    }
+    async function buyTicket() {
+      var alert = document.getElementById('alert-container');
+      var data = { session_id: parseInt(document.getElementById('session').value), seat_number: parseInt(document.getElementById('seat').value), customer_name: document.getElementById('name').value, customer_email: document.getElementById('email').value };
+      if (!data.session_id || !data.seat_number || !data.customer_name || !data.customer_email) { alert.innerHTML = '<div class="alert alert-error">Заполните все поля</div>'; return; }
+      var btn = document.getElementById('buy-btn'); btn.disabled = true; btn.textContent = 'Оформление...';
+      try {
+        var res = await fetch('/api/tickets', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) });
+        var result = await res.json();
+        if (res.ok) { alert.innerHTML = '<div class="alert alert-success">Билет #' + result.id + ' куплен! Место ' + result.seat_number + '.</div>'; document.getElementById('seat').value = ''; loadSessions(); }
+        else { alert.innerHTML = '<div class="alert alert-error">' + result.error + '</div>'; }
+      } catch(e) { alert.innerHTML = '<div class="alert alert-error">Ошибка соединения</div>'; }
+      btn.disabled = false; btn.textContent = 'Купить билет';
+    }
+    loadSessions();
+  </script>
+</body>
+</html>

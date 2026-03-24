@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CinemaHub — Фильм</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav>
+    <div class="nav-inner">
+      <a href="/" class="logo">Cinema<span>Hub</span></a>
+      <ul class="nav-links">
+        <li><a href="/">Афиша</a></li>
+        <li><a href="/sessions.html">Расписание</a></li>
+        <li><a href="/booking.html">Купить билет</a></li>
+        <li><a href="/reviews.html">Отзывы</a></li>
+        <li><a href="/stats.html">Статистика</a></li>
+        <li><a href="/add-movie.html">+ Фильм</a></li>
+      </ul>
+    </div>
+  </nav>
+  <div class="container">
+    <div id="movie-content"><div class="loading">Загрузка...</div></div>
+    <div style="margin-top:2rem;">
+      <h2 style="font-family:'Unbounded',sans-serif;font-size:1.3rem;margin-bottom:1rem;color:var(--text-bright);">Ближайшие сеансы</h2>
+      <div id="sessions-content"><div class="loading">Загрузка сеансов...</div></div>
+    </div>
+    <div style="margin-top:2rem;">
+      <h2 style="font-family:'Unbounded',sans-serif;font-size:1.3rem;margin-bottom:1rem;color:var(--text-bright);">Отзывы зрителей</h2>
+      <div class="reviews-list" id="reviews-content"><div class="loading">Загрузка отзывов...</div></div>
+    </div>
+  </div>
+  <script>
+    var params = new URLSearchParams(window.location.search);
+    var movieId = params.get('id');
+    async function loadMovie(){var c=document.getElementById('movie-content');try{var res=await fetch('/api/movies/'+movieId);var m=await res.json();document.title='CinemaHub — '+m.title;var poster=m.poster_url||'https://placehold.co/300x450/1a1a2e/e94560?text=NO+POSTER';c.innerHTML='<div class="movie-detail"><img class="poster-large" src="'+poster+'" alt="'+m.title+'" onerror="this.src=\'https://placehold.co/300x450/1a1a2e/e94560?text=NO+POSTER\'"><div class="detail-info"><h1>'+m.title+'</h1><div class="detail-meta"><span class="detail-tag"><strong>Жанр:</strong> '+m.genre+'</span><span class="detail-tag"><strong>Длит.:</strong> '+m.duration_min+' мин</span><span class="detail-tag"><strong>Режиссёр:</strong> '+m.director+'</span><span class="detail-tag"><strong>Рейтинг:</strong> &#9733; '+(m.rating||'—')+'</span></div><p class="description">'+(m.description||'Описание отсутствует.')+'</p><div style="margin-top:1.5rem;"><a href="/booking.html?movie_id='+m.id+'" class="btn btn-primary">Купить билет</a></div></div></div>';}catch(e){c.innerHTML='<p class="alert alert-error">Фильм не найден</p>';}}
+    async function loadSessions(){var c=document.getElementById('sessions-content');try{var res=await fetch('/api/movies/'+movieId+'/sessions');var sessions=await res.json();if(sessions.length===0){c.innerHTML='<p style="color:var(--text-dim)">Нет предстоящих сеансов</p>';return;}c.innerHTML='<table class="sessions-table"><thead><tr><th>Дата и время</th><th>Зал</th><th>Тип</th><th>Цена</th><th>Места</th><th></th></tr></thead><tbody>'+sessions.map(function(s){var dt=new Date(s.start_time);var seats=parseInt(s.available_seats);return'<tr><td>'+dt.toLocaleDateString('ru-RU')+' '+dt.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})+'</td><td>'+s.hall_name+'</td><td>'+s.hall_type+'</td><td><strong>'+parseFloat(s.price).toFixed(0)+' ₽</strong></td><td><span class="seats-badge '+(seats<20?'low':'available')+'">'+seats+' мест</span></td><td><a href="/booking.html?session_id='+s.session_id+'" class="btn btn-primary btn-small">Купить</a></td></tr>';}).join('')+'</tbody></table>';}catch(e){c.innerHTML='<p class="alert alert-error">Ошибка загрузки сеансов</p>';}}
+    async function loadReviews(){var c=document.getElementById('reviews-content');try{var res=await fetch('/api/reviews?movie_id='+movieId);var reviews=await res.json();if(reviews.length===0){c.innerHTML='<p style="color:var(--text-dim)">Пока нет отзывов</p>';return;}c.innerHTML=reviews.map(function(r){return'<div class="review-card"><div class="review-header"><span class="author">'+r.author+'</span><span class="review-rating">&#9733; '+r.rating+'/10</span></div><p class="review-text">'+r.text+'</p><div class="review-footer"><span>'+new Date(r.created_at).toLocaleDateString('ru-RU')+'</span><span>&#9829; '+r.likes+'</span></div></div>';}).join('');}catch(e){c.innerHTML='<p class="alert alert-error">Ошибка загрузки отзывов</p>';}}
+    loadMovie();loadSessions();loadReviews();
+  </script>
+</body>
+</html>

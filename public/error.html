@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CinemaHub — Ошибка</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .error-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 70vh;
+      text-align: center;
+      padding: 2rem;
+    }
+
+    .error-code {
+      font-family: 'Unbounded', sans-serif;
+      font-size: 8rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1;
+      margin-bottom: 1rem;
+      animation: glitch 3s infinite;
+    }
+
+    .error-title {
+      font-family: 'Unbounded', sans-serif;
+      font-size: 1.5rem;
+      color: var(--text-bright);
+      margin-bottom: 1rem;
+    }
+
+    .error-message {
+      color: var(--text-dim);
+      font-size: 1rem;
+      max-width: 500px;
+      line-height: 1.7;
+      margin-bottom: 2rem;
+    }
+
+    .error-details {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.2rem 1.5rem;
+      margin-bottom: 2rem;
+      max-width: 500px;
+      width: 100%;
+    }
+
+    .error-details .detail-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .error-details .detail-row:last-child {
+      border-bottom: none;
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 0.5rem;
+    }
+
+    .status-dot.ok { background: var(--success); box-shadow: 0 0 8px rgba(46, 204, 113, 0.5); }
+    .status-dot.fail { background: var(--accent); box-shadow: 0 0 8px var(--accent-glow); animation: pulse 1.5s infinite; }
+    .status-dot.checking { background: var(--warning); animation: pulse 1s infinite; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    @keyframes glitch {
+      0%, 90%, 100% { transform: translate(0); }
+      92% { transform: translate(-3px, 2px); }
+      94% { transform: translate(3px, -2px); }
+      96% { transform: translate(-2px, -1px); }
+      98% { transform: translate(2px, 1px); }
+    }
+
+    .film-strip {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 2rem;
+      opacity: 0.15;
+    }
+
+    .film-frame {
+      width: 40px;
+      height: 30px;
+      border: 2px solid var(--text-dim);
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="nav-inner">
+      <a href="/" class="logo">Cinema<span>Hub</span></a>
+      <ul class="nav-links">
+        <li><a href="/">Афиша</a></li>
+        <li><a href="/sessions.html">Расписание</a></li>
+        <li><a href="/booking.html">Купить билет</a></li>
+        <li><a href="/reviews.html">Отзывы</a></li>
+        <li><a href="/stats.html">Статистика</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="error-container">
+    <div class="film-strip">
+      <div class="film-frame"></div>
+      <div class="film-frame"></div>
+      <div class="film-frame"></div>
+      <div class="film-frame"></div>
+      <div class="film-frame"></div>
+      <div class="film-frame"></div>
+      <div class="film-frame"></div>
+    </div>
+
+    <div class="error-code">503</div>
+    <div class="error-title">Сеанс прерван</div>
+    <div class="error-message">
+      Один или несколько сервисов базы данных недоступны. 
+      Проверьте, что Docker-контейнеры запущены, и попробуйте снова.
+    </div>
+
+    <div class="error-details">
+      <div class="detail-row">
+        <span><span class="status-dot checking" id="dot-pg"></span> PostgreSQL</span>
+        <span id="status-pg" style="color: var(--text-dim);">проверка...</span>
+      </div>
+      <div class="detail-row">
+        <span><span class="status-dot checking" id="dot-mongo"></span> MongoDB</span>
+        <span id="status-mongo" style="color: var(--text-dim);">проверка...</span>
+      </div>
+      <div class="detail-row">
+        <span><span class="status-dot checking" id="dot-redis"></span> Redis</span>
+        <span id="status-redis" style="color: var(--text-dim);">проверка...</span>
+      </div>
+    </div>
+
+    <div>
+      <button class="btn btn-primary" onclick="checkHealth()">Проверить снова</button>
+      <a href="/" class="btn btn-secondary" style="margin-left: 0.5rem;">На главную</a>
+    </div>
+  </div>
+
+  <script>
+    async function checkHealth() {
+      const services = ['pg', 'mongo', 'redis'];
+      services.forEach(s => {
+        document.getElementById(`dot-${s}`).className = 'status-dot checking';
+        document.getElementById(`status-${s}`).textContent = 'проверка...';
+        document.getElementById(`status-${s}`).style.color = 'var(--text-dim)';
+      });
+
+      try {
+        const res = await fetch('/api/health');
+        const data = await res.json();
+
+        setStatus('pg', data.postgresql);
+        setStatus('mongo', data.mongodb);
+        setStatus('redis', data.redis);
+
+        if (data.postgresql && data.mongodb && data.redis) {
+          setTimeout(() => window.location.href = '/', 1000);
+        }
+      } catch (err) {
+        services.forEach(s => setStatus(s, false));
+      }
+    }
+
+    function setStatus(service, ok) {
+      const dot = document.getElementById(`dot-${service}`);
+      const text = document.getElementById(`status-${service}`);
+      dot.className = ok ? 'status-dot ok' : 'status-dot fail';
+      text.textContent = ok ? 'работает' : 'недоступен';
+      text.style.color = ok ? 'var(--success)' : 'var(--accent)';
+    }
+
+    checkHealth();
+    setInterval(checkHealth, 10000);
+  </script>
+</body>
+</html>

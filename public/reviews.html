@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CinemaHub — Отзывы</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav>
+    <div class="nav-inner">
+      <a href="/" class="logo">Cinema<span>Hub</span></a>
+      <ul class="nav-links">
+        <li><a href="/">Афиша</a></li>
+        <li><a href="/sessions.html">Расписание</a></li>
+        <li><a href="/booking.html">Купить билет</a></li>
+        <li><a href="/reviews.html" class="active">Отзывы</a></li>
+        <li><a href="/stats.html">Статистика</a></li>
+        <li><a href="/add-movie.html">+ Фильм</a></li>
+      </ul>
+    </div>
+  </nav>
+  <div class="container">
+    <div class="page-header">
+      <h1>Отзывы зрителей</h1>
+      <p>Узнайте, что думают другие зрители о наших фильмах</p>
+    </div>
+    <h2 style="font-family:'Unbounded',sans-serif;font-size:1.1rem;margin-bottom:1rem;color:var(--text-bright);">Средние оценки</h2>
+    <div class="stats-grid" id="review-stats"><div class="loading">Загрузка...</div></div>
+    <h2 style="font-family:'Unbounded',sans-serif;font-size:1.1rem;margin:2rem 0 1rem;color:var(--text-bright);">Оставить отзыв</h2>
+    <div id="review-alert"></div>
+    <div class="form-card" style="margin-bottom:2rem;">
+      <div class="form-group"><label for="r-movie">Фильм</label><select id="r-movie"><option value="">Загрузка...</option></select></div>
+      <div class="form-group"><label for="r-author">Ваш никнейм</label><input type="text" id="r-author" placeholder="CinemaFan"></div>
+      <div class="form-group"><label for="r-rating">Оценка (1–10)</label><input type="number" id="r-rating" min="1" max="10" placeholder="8"></div>
+      <div class="form-group"><label for="r-text">Текст отзыва</label><textarea id="r-text" placeholder="Напишите ваш отзыв..."></textarea></div>
+      <button class="btn btn-primary" onclick="submitReview()">Отправить отзыв</button>
+    </div>
+    <h2 style="font-family:'Unbounded',sans-serif;font-size:1.1rem;margin-bottom:1rem;color:var(--text-bright);">Все отзывы</h2>
+    <div class="reviews-list" id="reviews-list"><div class="loading">Загрузка...</div></div>
+  </div>
+  <script>
+    async function safeFetch(url,o){var c=new AbortController();var t=setTimeout(function(){c.abort();},5000);try{var r=await fetch(url,Object.assign({},o,{signal:c.signal}));clearTimeout(t);if(r.status===503||r.status>=500){window.location.href='/error.html';return null;}return r;}catch(e){clearTimeout(t);window.location.href='/error.html';return null;}}
+    async function loadMovies(){var sel=document.getElementById('r-movie');try{var res=await fetch('/api/movies');var movies=await res.json();sel.innerHTML='<option value="">— Выберите фильм —</option>'+movies.map(function(m){return'<option value="'+m.id+'" data-title="'+m.title+'">'+m.title+'</option>';}).join('');}catch(e){sel.innerHTML='<option>Ошибка</option>';}}
+    async function loadReviewStats(){var c=document.getElementById('review-stats');var res=await safeFetch('/api/reviews/stats');if(!res)return;try{var stats=await res.json();c.innerHTML=stats.map(function(s){return'<div class="stat-card"><div class="stat-value">&#9733; '+s.avg_rating+'</div><div class="stat-label"><strong>'+s.movie_title+'</strong><br>'+s.total_reviews+' отзывов · '+s.total_likes+' &#9829;<br><small>мин: '+s.min_rating+' / макс: '+s.max_rating+'</small></div></div>';}).join('');}catch(e){c.innerHTML='<p class="alert alert-error">Ошибка загрузки</p>';}}
+    async function loadReviews(){var c=document.getElementById('reviews-list');var res=await safeFetch('/api/reviews');if(!res)return;try{var reviews=await res.json();c.innerHTML=reviews.map(function(r){return'<div class="review-card"><div class="review-header"><span><span class="author">'+r.author+'</span><span style="color:var(--text-dim);font-size:0.85rem;"> о фильме </span><a href="/movie.html?id='+r.movie_id+'" style="color:var(--accent);text-decoration:none;font-weight:600;">'+r.movie_title+'</a></span><span class="review-rating">&#9733; '+r.rating+'/10</span></div><p class="review-text">'+r.text+'</p><div class="review-footer"><span>'+new Date(r.created_at).toLocaleDateString('ru-RU')+'</span><span>&#9829; '+r.likes+'</span></div></div>';}).join('');}catch(e){c.innerHTML='<p class="alert alert-error">Ошибка загрузки</p>';}}
+    async function submitReview(){var a=document.getElementById('review-alert');var sel=document.getElementById('r-movie');var mid=sel.value;var mt=sel.options[sel.selectedIndex]?sel.options[sel.selectedIndex].dataset.title:'';var author=document.getElementById('r-author').value;var rating=document.getElementById('r-rating').value;var text=document.getElementById('r-text').value;if(!mid||!author||!rating){a.innerHTML='<div class="alert alert-error">Укажите фильм, никнейм и оценку</div>';return;}try{var res=await fetch('/api/reviews',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({movie_id:mid,movie_title:mt,author:author,rating:rating,text:text})});if(res.ok){a.innerHTML='<div class="alert alert-success">Отзыв добавлен!</div>';document.getElementById('r-author').value='';document.getElementById('r-rating').value='';document.getElementById('r-text').value='';loadReviews();loadReviewStats();}else{var d=await res.json();a.innerHTML='<div class="alert alert-error">'+d.error+'</div>';}}catch(e){a.innerHTML='<div class="alert alert-error">Ошибка соединения</div>';}}
+    loadMovies();loadReviewStats();loadReviews();
+  </script>
+</body>
+</html>

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CinemaHub — Статистика</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav>
+    <div class="nav-inner">
+      <a href="/" class="logo">Cinema<span>Hub</span></a>
+      <ul class="nav-links">
+        <li><a href="/">Афиша</a></li>
+        <li><a href="/sessions.html">Расписание</a></li>
+        <li><a href="/booking.html">Купить билет</a></li>
+        <li><a href="/reviews.html">Отзывы</a></li>
+        <li><a href="/stats.html" class="active">Статистика</a></li>
+        <li><a href="/add-movie.html">+ Фильм</a></li>
+      </ul>
+    </div>
+  </nav>
+  <div class="container">
+    <div class="page-header">
+      <h1>Статистика кинотеатра</h1>
+      <p>Аналитика продаж и загруженности залов</p>
+    </div>
+    <h2 style="font-family:'Unbounded',sans-serif;font-size:1.1rem;margin-bottom:1rem;color:var(--text-bright);">Продажи билетов по фильмам</h2>
+    <div id="tickets-stats"><div class="loading">Загрузка...</div></div>
+    <h2 style="font-family:'Unbounded',sans-serif;font-size:1.1rem;margin:2rem 0 1rem;color:var(--text-bright);">Статистика по залам</h2>
+    <div id="halls-stats"><div class="loading">Загрузка...</div></div>
+    <div style="margin-top:2rem;"><button class="btn btn-secondary btn-small" onclick="loadAll()">Обновить данные</button></div>
+  </div>
+  <script>
+    async function safeFetch(url){var c=new AbortController();var t=setTimeout(function(){c.abort();},5000);try{var r=await fetch(url,{signal:c.signal});clearTimeout(t);if(r.status>=500){window.location.href='/error.html';return null;}return r;}catch(e){clearTimeout(t);window.location.href='/error.html';return null;}}
+    async function loadTicketStats(){var c=document.getElementById('tickets-stats');var res=await safeFetch('/api/stats/tickets-by-movie');if(!res)return;try{var json=await res.json();c.innerHTML='<table class="sessions-table"><thead><tr><th>Фильм</th><th>Жанр</th><th>Продано билетов</th><th>Выручка</th><th>Средняя цена</th></tr></thead><tbody>'+json.data.map(function(r){return'<tr><td><strong>'+r.title+'</strong></td><td>'+r.genre+'</td><td>'+r.tickets_sold+'</td><td>'+parseFloat(r.total_revenue).toLocaleString('ru-RU')+' ₽</td><td>'+parseFloat(r.avg_price).toFixed(0)+' ₽</td></tr>';}).join('')+'</tbody></table>';}catch(e){c.innerHTML='<p class="alert alert-error">Ошибка загрузки</p>';}}
+    async function loadHallStats(){var c=document.getElementById('halls-stats');var res=await safeFetch('/api/stats/sessions-by-hall');if(!res)return;try{var json=await res.json();c.innerHTML='<table class="sessions-table"><thead><tr><th>Зал</th><th>Тип</th><th>Вместимость</th><th>Всего сеансов</th><th>Продано билетов</th><th>Ср. билетов/сеанс</th></tr></thead><tbody>'+json.data.map(function(r){return'<tr><td><strong>'+r.hall_name+'</strong></td><td>'+r.hall_type+'</td><td>'+r.capacity+'</td><td>'+r.total_sessions+'</td><td>'+r.total_tickets+'</td><td>'+(r.avg_tickets_per_session || '0')+'</td></tr>';}).join('')+'</tbody></table>';}catch(e){c.innerHTML='<p class="alert alert-error">Ошибка загрузки</p>';}}
+    function loadAll(){loadTicketStats();loadHallStats();}
+    loadAll();
+  </script>
+</body>
+</html>

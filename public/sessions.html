@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CinemaHub — Расписание</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav>
+    <div class="nav-inner">
+      <a href="/" class="logo">Cinema<span>Hub</span></a>
+      <ul class="nav-links">
+        <li><a href="/">Афиша</a></li>
+        <li><a href="/sessions.html" class="active">Расписание</a></li>
+        <li><a href="/booking.html">Купить билет</a></li>
+        <li><a href="/reviews.html">Отзывы</a></li>
+        <li><a href="/stats.html">Статистика</a></li>
+        <li><a href="/add-movie.html">+ Фильм</a></li>
+      </ul>
+    </div>
+  </nav>
+  <div class="container">
+    <div class="page-header">
+      <h1>Расписание сеансов</h1>
+      <p>Все ближайшие сеансы в нашем кинотеатре</p>
+    </div>
+    <div id="sessions-content"><div class="loading">Загрузка расписания...</div></div>
+  </div>
+  <script>
+    async function safeFetch(url) {
+      var c = new AbortController(); var t = setTimeout(function(){c.abort();},5000);
+      try { var r = await fetch(url,{signal:c.signal}); clearTimeout(t); if(r.status>=500){window.location.href='/error.html';return null;} return r; }
+      catch(e) { clearTimeout(t); window.location.href='/error.html'; return null; }
+    }
+    async function loadSessions() {
+      var container = document.getElementById('sessions-content');
+      var res = await safeFetch('/api/sessions');
+      if (!res) return;
+      try {
+        var sessions = await res.json();
+        if (sessions.length === 0) { container.innerHTML = '<p style="color:var(--text-dim)">Нет предстоящих сеансов</p>'; return; }
+        var rows = sessions.map(function(s) {
+          var dt = new Date(s.start_time);
+          var seats = parseInt(s.available_seats);
+          return '<tr>' +
+            '<td><a href="/movie.html?id=' + s.movie_id + '" style="color:var(--accent);text-decoration:none;font-weight:600;">' + s.movie_title + '</a></td>' +
+            '<td>' + s.genre + '</td>' +
+            '<td>' + dt.toLocaleDateString('ru-RU') + ' ' + dt.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'}) + '</td>' +
+            '<td>' + s.hall_name + '</td><td>' + s.hall_type + '</td>' +
+            '<td><strong>' + parseFloat(s.price).toFixed(0) + ' ₽</strong></td>' +
+            '<td><span class="seats-badge ' + (seats<20?'low':'available') + '">' + seats + '</span></td>' +
+            '<td><a href="/booking.html?session_id=' + s.session_id + '" class="btn btn-primary btn-small">Купить</a></td></tr>';
+        }).join('');
+        container.innerHTML = '<table class="sessions-table"><thead><tr><th>Фильм</th><th>Жанр</th><th>Дата и время</th><th>Зал</th><th>Тип зала</th><th>Цена</th><th>Места</th><th></th></tr></thead><tbody>' + rows + '</tbody></table>';
+      } catch(e) { container.innerHTML = '<p class="alert alert-error">Ошибка загрузки</p>'; }
+    }
+    loadSessions();
+  </script>
+</body>
+</html>

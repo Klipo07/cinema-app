@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CinemaHub — Добавить фильм</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .search-results{display:flex;gap:1rem;flex-wrap:wrap;margin:1rem 0;}
+    .search-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:0.8rem;cursor:pointer;width:160px;transition:all 0.2s;text-align:center;}
+    .search-card:hover,.search-card.selected{border-color:var(--accent);box-shadow:0 0 20px var(--accent-glow);}
+    .search-card img{width:120px;height:180px;object-fit:cover;border-radius:8px;margin-bottom:0.5rem;}
+    .search-card .sc-title{font-size:0.8rem;font-weight:600;color:var(--text-bright);}
+    .search-card .sc-year{font-size:0.75rem;color:var(--text-dim);}
+    .halls-grid{display:flex;gap:0.8rem;flex-wrap:wrap;margin:0.5rem 0;}
+    .hall-btn{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:0.6rem 1rem;cursor:pointer;color:var(--text-dim);font-size:0.85rem;transition:all 0.2s;font-family:'Montserrat',sans-serif;}
+    .hall-btn:hover{border-color:var(--accent);color:var(--text-bright);}
+    .hall-btn.active{background:rgba(233,69,96,0.15);border-color:var(--accent);color:var(--accent);font-weight:600;}
+    .times-grid{display:flex;gap:0.5rem;flex-wrap:wrap;margin:0.5rem 0;}
+    .time-btn{background:var(--bg-card);border:1px solid var(--border);border-radius:6px;padding:0.4rem 0.8rem;cursor:pointer;color:var(--text-dim);font-size:0.85rem;transition:all 0.2s;font-family:'Montserrat',sans-serif;}
+    .time-btn:hover{border-color:var(--accent);}
+    .time-btn.active{background:rgba(233,69,96,0.15);border-color:var(--accent);color:var(--accent);font-weight:600;}
+    .step-title{font-family:'Unbounded',sans-serif;font-size:1rem;color:var(--text-bright);margin:1.5rem 0 0.8rem;display:flex;align-items:center;gap:0.5rem;}
+    .step-num{background:var(--accent);color:#fff;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:700;}
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="nav-inner">
+      <a href="/" class="logo">Cinema<span>Hub</span></a>
+      <ul class="nav-links">
+        <li><a href="/">Афиша</a></li>
+        <li><a href="/sessions.html">Расписание</a></li>
+        <li><a href="/booking.html">Купить билет</a></li>
+        <li><a href="/reviews.html">Отзывы</a></li>
+        <li><a href="/stats.html">Статистика</a></li>
+        <li><a href="/add-movie.html" class="active">+ Фильм</a></li>
+      </ul>
+    </div>
+  </nav>
+  <div class="container">
+    <div class="page-header">
+      <h1>Добавить фильм</h1>
+      <p>Найдите фильм, выберите залы и расписание</p>
+    </div>
+    <div id="alert-container"></div>
+    <div class="form-card" style="max-width:700px;">
+
+      <div class="step-title"><span class="step-num">1</span> Найти фильм</div>
+      <div class="form-group">
+        <div style="display:flex;gap:0.5rem;">
+          <input type="text" id="search-query" placeholder="Название фильма, например: Интерстеллар" style="flex:1;">
+          <button class="btn btn-primary" onclick="searchMovie()">Найти</button>
+        </div>
+      </div>
+      <div class="search-results" id="search-results"></div>
+
+      <div class="step-title"><span class="step-num">2</span> Информация о фильме</div>
+      <div class="form-group"><label for="title">Название *</label><input type="text" id="title" placeholder="Название фильма"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+        <div class="form-group"><label for="genre">Жанр *</label><input type="text" id="genre" placeholder="Фантастика"></div>
+        <div class="form-group"><label for="duration">Длительность (мин) *</label><input type="number" id="duration" placeholder="120"></div>
+      </div>
+      <div class="form-group"><label for="director">Режиссёр *</label><input type="text" id="director" placeholder="Кристофер Нолан"></div>
+      <div class="form-group"><label for="description">Описание</label><textarea id="description" placeholder="Краткое описание..."></textarea></div>
+      <input type="hidden" id="poster_url">
+      <div id="poster-preview" style="margin-bottom:1rem;"></div>
+
+      <div class="step-title"><span class="step-num">3</span> Расписание показов</div>
+      <div class="form-group">
+        <label>Выберите залы</label>
+        <div class="halls-grid" id="halls-grid"><div class="loading">Загрузка залов...</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+        <div class="form-group">
+          <label for="days">На сколько дней</label>
+          <select id="days">
+            <option value="1">1 день</option>
+            <option value="2">2 дня</option>
+            <option value="3" selected>3 дня</option>
+            <option value="5">5 дней</option>
+            <option value="7">7 дней</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Время сеансов</label>
+        <div class="times-grid" id="times-grid">
+          <div class="time-btn active" onclick="toggleTime(this)" data-time="10:00">10:00</div>
+          <div class="time-btn" onclick="toggleTime(this)" data-time="12:00">12:00</div>
+          <div class="time-btn active" onclick="toggleTime(this)" data-time="14:00">14:00</div>
+          <div class="time-btn" onclick="toggleTime(this)" data-time="16:00">16:00</div>
+          <div class="time-btn active" onclick="toggleTime(this)" data-time="19:00">19:00</div>
+          <div class="time-btn" onclick="toggleTime(this)" data-time="21:30">21:30</div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" onclick="addMovie()" style="margin-top:1rem;">Добавить фильм и создать сеансы</button>
+    </div>
+  </div>
+  <script>
+    var selectedHalls = [];
+    var searchInput = document.getElementById('search-query');
+    searchInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') searchMovie(); });
+
+    async function loadHalls() {
+      try {
+        var res = await fetch('/api/halls');
+        var halls = await res.json();
+        var c = document.getElementById('halls-grid');
+        c.innerHTML = halls.map(function(h) {
+          return '<div class="hall-btn" onclick="toggleHall(this,' + h.id + ')" data-id="' + h.id + '">' + h.name + ' (' + h.hall_type + ', ' + h.capacity + ' мест)</div>';
+        }).join('');
+      } catch(e) {}
+    }
+
+    function toggleHall(el, id) {
+      el.classList.toggle('active');
+      var idx = selectedHalls.indexOf(id);
+      if (idx >= 0) selectedHalls.splice(idx, 1);
+      else selectedHalls.push(id);
+    }
+
+    function toggleTime(el) { el.classList.toggle('active'); }
+
+    function getSelectedTimes() {
+      var times = [];
+      document.querySelectorAll('.time-btn.active').forEach(function(el) { times.push(el.dataset.time); });
+      return times;
+    }
+
+    async function searchMovie() {
+      var query = document.getElementById('search-query').value.trim();
+      if (!query) return;
+      var c = document.getElementById('search-results');
+      c.innerHTML = '<div class="loading">Поиск...</div>';
+      try {
+        var res = await fetch('/api/poster-search?q=' + encodeURIComponent(query));
+        var movies = await res.json();
+        if (movies.length === 0) { c.innerHTML = '<p style="color:var(--text-dim)">Ничего не найдено. Попробуйте другое название.</p>'; return; }
+        c.innerHTML = movies.map(function(m, i) {
+          var img = m.poster_url || 'https://placehold.co/120x180/1a1a2e/e94560?text=?';
+          return '<div class="search-card" onclick="selectMovie(' + i + ')" data-index="' + i + '">' +
+            '<img src="' + img + '" onerror="this.src=\'https://placehold.co/120x180/1a1a2e/e94560?text=?\'">' +
+            '<div class="sc-title">' + m.title + '</div>' +
+            '<div class="sc-year">' + m.year + '</div></div>';
+        }).join('');
+        window._searchResults = movies;
+      } catch(e) { c.innerHTML = '<p class="alert alert-error">Ошибка поиска</p>'; }
+    }
+
+    function selectMovie(index) {
+      var m = window._searchResults[index];
+      if (!m) return;
+      document.getElementById('title').value = m.title;
+      document.getElementById('description').value = m.overview || '';
+      document.getElementById('poster_url').value = m.poster_url || '';
+      if (m.director) document.getElementById('director').value = m.director;
+      if (m.genre) document.getElementById('genre').value = m.genre;
+      if (m.duration) document.getElementById('duration').value = m.duration;
+      document.querySelectorAll('.search-card').forEach(function(el) { el.classList.remove('selected'); });
+      document.querySelector('.search-card[data-index="' + index + '"]').classList.add('selected');
+      if (m.poster_url) {
+        document.getElementById('poster-preview').innerHTML = '<img src="' + m.poster_url + '" style="width:150px;border-radius:8px;border:1px solid var(--border);">';
+      }
+    }
+
+    async function addMovie() {
+      var a = document.getElementById('alert-container');
+      var times = getSelectedTimes();
+      var days = parseInt(document.getElementById('days').value);
+
+      if (selectedHalls.length === 0 || times.length === 0) {
+        a.innerHTML = '<div class="alert alert-error">Выберите хотя бы один зал и одно время</div>';
+        return;
+      }
+
+      var movieData = {
+        title: document.getElementById('title').value,
+        genre: document.getElementById('genre').value,
+        duration_min: document.getElementById('duration').value,
+        director: document.getElementById('director').value,
+        description: document.getElementById('description').value,
+        poster_url: document.getElementById('poster_url').value,
+      };
+      if (!movieData.title || !movieData.genre || !movieData.duration_min || !movieData.director) {
+        a.innerHTML = '<div class="alert alert-error">Заполните название, жанр, длительность и режиссёра</div>';
+        return;
+      }
+
+      try {
+        // 1. Добавляем фильм
+        var movieRes = await fetch('/api/movies', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(movieData) });
+        var movie = await movieRes.json();
+        if (!movieRes.ok) { a.innerHTML = '<div class="alert alert-error">' + movie.error + '</div>'; return; }
+
+        // 2. Создаём сеансы
+        var sessRes = await fetch('/api/sessions', {
+          method: 'POST', headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ movie_id: movie.id, hall_ids: selectedHalls, days: days, times: times })
+        });
+        var sessData = await sessRes.json();
+
+        a.innerHTML = '<div class="alert alert-success">Фильм "' + movie.title + '" добавлен! Создано сеансов: ' + sessData.created + '. <a href="/" style="color:var(--success);">На афишу</a></div>';
+      } catch(e) {
+        a.innerHTML = '<div class="alert alert-error">Ошибка соединения</div>';
+      }
+    }
+
+    loadHalls();
+  </script>
+</body>
+</html>
