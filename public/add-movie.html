@@ -35,6 +35,7 @@
         <li><a href="/reviews.html">Отзывы</a></li>
         <li><a href="/stats.html">Статистика</a></li>
         <li><a href="/add-movie.html" class="active">+ Фильм</a></li>
+        <li><a href="/auth.html" id="nav-auth">Войти</a></li>
       </ul>
     </div>
   </nav>
@@ -209,5 +210,6 @@
 
     loadHalls();
   </script>
+<script>(function(){var u=localStorage.getItem("cinema_user");var a=document.getElementById("nav-auth");if(u&&a){var d=JSON.parse(u);a.textContent=d.username;a.href="/profile.html";}})();</script>
 </body>
 </html>

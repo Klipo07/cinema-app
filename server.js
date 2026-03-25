@@ -1,5 +1,6 @@
 var express = require('express');
 var path = require('path');
+var crypto = require('crypto');
 var { Pool } = require('pg');
 var { MongoClient } = require('mongodb');
 var redis = require('redis');
@@ -446,6 +447,7 @@ app.get('/api/reviews', async function(req, res) {
     if (!mongoDB) return res.status(503).json({ error: 'MongoDB недоступна' });
     var filter = {};
     if (req.query.movie_id) filter.movie_id = parseInt(req.query.movie_id);
+    if (req.query.author) filter.author = req.query.author;
     console.log('[MongoDB] db.reviews.find(' + JSON.stringify(filter) + ')');
     var reviews = await mongoDB.collection('reviews').find(filter).sort({ created_at: -1 }).toArray();
     console.log('[MongoDB] Найдено отзывов:', reviews.length);
@@ -536,6 +538,87 @@ app.delete('/api/cache', async function(req, res) {
       console.log('[Redis] Кеш очищен вручную');
     }
     res.json({ message: 'Кеш очищен' });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ======================== АВТОРИЗАЦИЯ (MongoDB) ========================
+
+function hashPassword(password) {
+  return crypto.createHash('sha256').update(password).digest('hex');
+}
+
+app.post('/api/auth/register', async function(req, res) {
+  var username = req.body.username;
+  var full_name = req.body.full_name;
+  var email = req.body.email;
+  var password = req.body.password;
+  var preferences = req.body.preferences || { genres: [], preferred_hall: 'Стандарт' };
+  if (!username || !full_name || !email || !password)
+    return res.status(400).json({ error: 'Заполните все поля' });
+  if (password.length < 4)
+    return res.status(400).json({ error: 'Пароль должен быть не менее 4 символов' });
+  try {
+    if (!mongoDB) return res.status(503).json({ error: 'MongoDB недоступна' });
+    var existing = await mongoDB.collection('users').findOne({ $or: [{ email: email }, { username: username }] });
+    if (existing) {
+      if (existing.email === email) return res.status(409).json({ error: 'Пользователь с таким email уже существует' });
+      return res.status(409).json({ error: 'Никнейм уже занят' });
+    }
+    var user = {
+      username: username, email: email, full_name: full_name,
+      password_hash: hashPassword(password),
+      registered_at: new Date(),
+      preferences: preferences,
+      visit_count: 1,
+    };
+    console.log('[MongoDB] db.users.insertOne — регистрация:', username);
+    var result = await mongoDB.collection('users').insertOne(user);
+    user._id = result.insertedId;
+    console.log('[MongoDB] Пользователь зарегистрирован:', username);
+    var safeUser = { _id: user._id, username: user.username, email: user.email,
+      full_name: user.full_name, registered_at: user.registered_at,
+      preferences: user.preferences, visit_count: user.visit_count };
+    res.status(201).json({ user: safeUser });
+  } catch (err) {
+    console.error('[MongoDB] ОШИБКА:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/auth/login', async function(req, res) {
+  var email = req.body.email;
+  var password = req.body.password;
+  if (!email || !password)
+    return res.status(400).json({ error: 'Введите email и пароль' });
+  try {
+    if (!mongoDB) return res.status(503).json({ error: 'MongoDB недоступна' });
+    console.log('[MongoDB] db.users.findOne — вход:', email);
+    var user = await mongoDB.collection('users').findOne({ email: email });
+    if (!user) return res.status(401).json({ error: 'Пользователь не найден' });
+    if (user.password_hash !== hashPassword(password))
+      return res.status(401).json({ error: 'Неверный пароль' });
+    console.log('[MongoDB] Вход выполнен:', user.username);
+    var safeUser = { _id: user._id, username: user.username, email: user.email,
+      full_name: user.full_name, registered_at: user.registered_at,
+      preferences: user.preferences, visit_count: user.visit_count };
+    res.json({ user: safeUser });
+  } catch (err) {
+    console.error('[MongoDB] ОШИБКА:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Трекинг визитов
+app.post('/api/users/:username/visit', async function(req, res) {
+  try {
+    if (!mongoDB) return res.status(503).json({ error: 'MongoDB недоступна' });
+    var result = await mongoDB.collection('users').findOneAndUpdate(
+      { username: req.params.username },
+      { $inc: { visit_count: 1 } },
+      { returnDocument: 'after' }
+    );
+    if (!result) return res.status(404).json({ error: 'Пользователь не найден' });
+    res.json({ visit_count: result.visit_count });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 

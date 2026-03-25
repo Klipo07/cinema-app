@@ -562,6 +562,119 @@ nav .nav-links a.active {
 }
 
 /* ===== АДАПТИВ ===== */
+/* ===== АВТОРИЗАЦИЯ ===== */
+.auth-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.auth-tab {
+  padding: 0.6rem 1.5rem;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-dim);
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.auth-tab.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.auth-tab:hover:not(.active) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ===== ПРОФИЛЬ ===== */
+.profile-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.profile-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 2rem;
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.profile-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Unbounded', sans-serif;
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.profile-info h2 {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 1.2rem;
+  color: var(--text-bright);
+  margin-bottom: 0.2rem;
+}
+
+.profile-username {
+  color: var(--accent);
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 0.3rem;
+}
+
+.profile-email {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  margin-bottom: 0.8rem;
+}
+
+.profile-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.profile-prefs {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 2rem;
+}
+
+.prefs-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.genre-tag {
+  background: rgba(233, 69, 96, 0.12);
+  color: var(--accent);
+  padding: 0.3rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+/* ===== АДАПТИВ ===== */
 @media (max-width: 768px) {
   nav .nav-links { gap: 0; }
   nav .nav-links a { padding: 0.5rem 0.5rem; font-size: 0.75rem; }
@@ -569,4 +682,6 @@ nav .nav-links a.active {
   .movie-detail .poster-large { max-width: 250px; }
   .page-header h1 { font-size: 1.5rem; }
   .movies-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+  .profile-grid { grid-template-columns: 1fr; }
+  .profile-card { flex-direction: column; text-align: center; }
 }

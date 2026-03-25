@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CinemaHub — Личный кабинет</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav>
+    <div class="nav-inner">
+      <a href="/" class="logo">Cinema<span>Hub</span></a>
+      <ul class="nav-links">
+        <li><a href="/">Афиша</a></li>
+        <li><a href="/sessions.html">Расписание</a></li>
+        <li><a href="/booking.html">Купить билет</a></li>
+        <li><a href="/reviews.html">Отзывы</a></li>
+        <li><a href="/stats.html">Статистика</a></li>
+        <li><a href="/add-movie.html">+ Фильм</a></li>
+        <li><a href="/profile.html" class="active" id="nav-auth">Профиль</a></li>
+      </ul>
+    </div>
+  </nav>
+  <div class="container">
+    <div class="page-header">
+      <h1>Личный кабинет</h1>
+      <p id="welcome-text">Загрузка...</p>
+    </div>
+
+    <!-- Профиль -->
+    <div class="profile-grid">
+      <div class="profile-card">
+        <div class="profile-avatar" id="profile-avatar">?</div>
+        <div class="profile-info">
+          <h2 id="profile-name">—</h2>
+          <p class="profile-username" id="profile-username">@—</p>
+          <p class="profile-email" id="profile-email">—</p>
+          <div class="profile-meta">
+            <span class="detail-tag"><strong>Дата регистрации:</strong> <span id="profile-date">—</span></span>
+            <span class="detail-tag"><strong>Визитов:</strong> <span id="profile-visits">0</span></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="profile-prefs">
+        <h3 style="font-family:'Unbounded',sans-serif;font-size:1rem;margin-bottom:1rem;color:var(--text-bright);">Предпочтения</h3>
+        <div class="prefs-tags" id="profile-genres"></div>
+        <p style="color:var(--text-dim);font-size:0.85rem;margin-top:0.8rem;">Любимый зал: <strong style="color:var(--text-main);" id="profile-hall">—</strong></p>
+      </div>
+    </div>
+
+    <!-- Мои отзывы -->
+    <h2 style="font-family:'Unbounded',sans-serif;font-size:1.1rem;margin:2.5rem 0 1rem;color:var(--text-bright);">Мои отзывы</h2>
+    <div class="reviews-list" id="my-reviews">
+      <div class="loading">Загрузка отзывов...</div>
+    </div>
+
+    <!-- Кнопка выхода -->
+    <div style="margin-top:2rem;">
+      <button class="btn btn-secondary" onclick="doLogout()">Выйти из аккаунта</button>
+    </div>
+  </div>
+
+  <script>
+    var userData = localStorage.getItem('cinema_user');
+    if (!userData) { window.location.href = '/auth.html'; }
+    var user = JSON.parse(userData);
+
+    function renderProfile() {
+      document.getElementById('welcome-text').textContent = 'Добро пожаловать, ' + user.full_name + '!';
+      document.getElementById('profile-name').textContent = user.full_name;
+      document.getElementById('profile-username').textContent = '@' + user.username;
+      document.getElementById('profile-email').textContent = user.email;
+      document.getElementById('profile-avatar').textContent = user.full_name.charAt(0).toUpperCase();
+      document.getElementById('profile-visits').textContent = user.visit_count || 0;
+      if (user.registered_at) {
+        document.getElementById('profile-date').textContent = new Date(user.registered_at).toLocaleDateString('ru-RU');
+      }
+      if (user.preferences) {
+        var genres = user.preferences.genres || [];
+        document.getElementById('profile-genres').innerHTML = genres.map(function(g) {
+          return '<span class="genre-tag">' + g + '</span>';
+        }).join('');
+        document.getElementById('profile-hall').textContent = user.preferences.preferred_hall || '—';
+      }
+    }
+
+    async function loadMyReviews() {
+      var c = document.getElementById('my-reviews');
+      try {
+        var res = await fetch('/api/reviews?author=' + encodeURIComponent(user.username));
+        var reviews = await res.json();
+        if (reviews.length === 0) {
+          c.innerHTML = '<p style="color:var(--text-dim);padding:1rem;">У вас пока нет отзывов. <a href="/reviews.html" style="color:var(--accent);">Написать отзыв</a></p>';
+          return;
+        }
+        c.innerHTML = reviews.map(function(r) {
+          return '<div class="review-card">' +
+            '<div class="review-header">' +
+              '<span><a href="/movie.html?id=' + r.movie_id + '" style="color:var(--accent);text-decoration:none;font-weight:600;">' + r.movie_title + '</a></span>' +
+              '<span class="review-rating">&#9733; ' + r.rating + '/10</span>' +
+            '</div>' +
+            '<p class="review-text">' + (r.text || '<em>Без текста</em>') + '</p>' +
+            '<div class="review-footer">' +
+              '<span>' + new Date(r.created_at).toLocaleDateString('ru-RU') + '</span>' +
+              '<span>&#9829; ' + (r.likes || 0) + '</span>' +
+            '</div></div>';
+        }).join('');
+      } catch (e) {
+        c.innerHTML = '<p class="alert alert-error">Ошибка загрузки отзывов</p>';
+      }
+    }
+
+    // Обновить visit_count на сервере
+    async function trackVisit() {
+      try {
+        var res = await fetch('/api/users/' + user.username + '/visit', { method: 'POST' });
+        if (res.ok) {
+          var data = await res.json();
+          user.visit_count = data.visit_count;
+          localStorage.setItem('cinema_user', JSON.stringify(user));
+        }
+      } catch (e) {}
+    }
+
+    function doLogout() {
+      localStorage.removeItem('cinema_user');
+      window.location.href = '/auth.html';
+    }
+
+    renderProfile();
+    loadMyReviews();
+    trackVisit();
+  </script>
+</body>
+</html>

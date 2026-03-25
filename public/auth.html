@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CinemaHub — Вход</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav>
+    <div class="nav-inner">
+      <a href="/" class="logo">Cinema<span>Hub</span></a>
+      <ul class="nav-links">
+        <li><a href="/">Афиша</a></li>
+        <li><a href="/sessions.html">Расписание</a></li>
+        <li><a href="/booking.html">Купить билет</a></li>
+        <li><a href="/reviews.html">Отзывы</a></li>
+        <li><a href="/stats.html">Статистика</a></li>
+        <li><a href="/add-movie.html">+ Фильм</a></li>
+        <li><a href="/auth.html" class="active" id="nav-auth">Войти</a></li>
+      </ul>
+    </div>
+  </nav>
+  <div class="container">
+    <div class="page-header">
+      <h1 id="page-title">Вход в аккаунт</h1>
+      <p id="page-desc">Авторизуйтесь, чтобы оставлять отзывы и управлять профилем</p>
+    </div>
+
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tab-login" onclick="showTab('login')">Вход</button>
+      <button class="auth-tab" id="tab-register" onclick="showTab('register')">Регистрация</button>
+    </div>
+
+    <div id="auth-alert"></div>
+
+    <!-- Форма входа -->
+    <div class="form-card auth-form" id="form-login" style="max-width:450px;">
+      <div class="form-group">
+        <label for="login-email">Email</label>
+        <input type="email" id="login-email" placeholder="your@mail.ru">
+      </div>
+      <div class="form-group">
+        <label for="login-password">Пароль</label>
+        <input type="password" id="login-password" placeholder="Введите пароль">
+      </div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="doLogin()">Войти</button>
+    </div>
+
+    <!-- Форма регистрации -->
+    <div class="form-card auth-form" id="form-register" style="max-width:450px;display:none;">
+      <div class="form-group">
+        <label for="reg-username">Никнейм</label>
+        <input type="text" id="reg-username" placeholder="cinema_fan">
+      </div>
+      <div class="form-group">
+        <label for="reg-fullname">Полное имя</label>
+        <input type="text" id="reg-fullname" placeholder="Иван Петров">
+      </div>
+      <div class="form-group">
+        <label for="reg-email">Email</label>
+        <input type="email" id="reg-email" placeholder="your@mail.ru">
+      </div>
+      <div class="form-group">
+        <label for="reg-password">Пароль</label>
+        <input type="password" id="reg-password" placeholder="Минимум 4 символа">
+      </div>
+      <div class="form-group">
+        <label for="reg-genre">Любимый жанр</label>
+        <select id="reg-genre">
+          <option value="Боевик">Боевик</option>
+          <option value="Драма">Драма</option>
+          <option value="Комедия">Комедия</option>
+          <option value="Фантастика" selected>Фантастика</option>
+          <option value="Ужасы">Ужасы</option>
+          <option value="Мультфильм">Мультфильм</option>
+          <option value="Триллер">Триллер</option>
+          <option value="Мелодрама">Мелодрама</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="reg-hall">Предпочитаемый зал</label>
+        <select id="reg-hall">
+          <option value="Стандарт">Стандарт</option>
+          <option value="Комфорт">Комфорт</option>
+          <option value="IMAX">IMAX</option>
+          <option value="VIP">VIP</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="doRegister()">Зарегистрироваться</button>
+    </div>
+  </div>
+
+  <script>
+    // Если уже авторизован — перекинуть в профиль
+    var user = localStorage.getItem('cinema_user');
+    if (user) { window.location.href = '/profile.html'; }
+
+    function showTab(tab) {
+      document.getElementById('form-login').style.display = tab === 'login' ? 'block' : 'none';
+      document.getElementById('form-register').style.display = tab === 'register' ? 'block' : 'none';
+      document.getElementById('tab-login').classList.toggle('active', tab === 'login');
+      document.getElementById('tab-register').classList.toggle('active', tab === 'register');
+      document.getElementById('page-title').textContent = tab === 'login' ? 'Вход в аккаунт' : 'Регистрация';
+      document.getElementById('page-desc').textContent = tab === 'login'
+        ? 'Авторизуйтесь, чтобы оставлять отзывы и управлять профилем'
+        : 'Создайте аккаунт для доступа ко всем функциям';
+      document.getElementById('auth-alert').innerHTML = '';
+    }
+
+    async function doLogin() {
+      var a = document.getElementById('auth-alert');
+      var email = document.getElementById('login-email').value.trim();
+      var password = document.getElementById('login-password').value;
+      if (!email || !password) { a.innerHTML = '<div class="alert alert-error">Заполните все поля</div>'; return; }
+      try {
+        var res = await fetch('/api/auth/login', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email, password: password })
+        });
+        var data = await res.json();
+        if (res.ok) {
+          localStorage.setItem('cinema_user', JSON.stringify(data.user));
+          window.location.href = '/profile.html';
+        } else {
+          a.innerHTML = '<div class="alert alert-error">' + data.error + '</div>';
+        }
+      } catch (e) { a.innerHTML = '<div class="alert alert-error">Ошибка соединения</div>'; }
+    }
+
+    async function doRegister() {
+      var a = document.getElementById('auth-alert');
+      var username = document.getElementById('reg-username').value.trim();
+      var full_name = document.getElementById('reg-fullname').value.trim();
+      var email = document.getElementById('reg-email').value.trim();
+      var password = document.getElementById('reg-password').value;
+      var genre = document.getElementById('reg-genre').value;
+      var hall = document.getElementById('reg-hall').value;
+      if (!username || !full_name || !email || !password) {
+        a.innerHTML = '<div class="alert alert-error">Заполните все обязательные поля</div>'; return;
+      }
+      if (password.length < 4) {
+        a.innerHTML = '<div class="alert alert-error">Пароль должен быть не менее 4 символов</div>'; return;
+      }
+      try {
+        var res = await fetch('/api/auth/register', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: username, full_name: full_name, email: email, password: password,
+            preferences: { genres: [genre], preferred_hall: hall } })
+        });
+        var data = await res.json();
+        if (res.ok) {
+          localStorage.setItem('cinema_user', JSON.stringify(data.user));
+          window.location.href = '/profile.html';
+        } else {
+          a.innerHTML = '<div class="alert alert-error">' + data.error + '</div>';
+        }
+      } catch (e) { a.innerHTML = '<div class="alert alert-error">Ошибка соединения</div>'; }
+    }
+
+    // Enter key support
+    document.getElementById('login-password').addEventListener('keydown', function(e) { if (e.key === 'Enter') doLogin(); });
+    document.getElementById('reg-hall').addEventListener('keydown', function(e) { if (e.key === 'Enter') doRegister(); });
+  </script>
+</body>
+</html>

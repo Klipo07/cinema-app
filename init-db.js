@@ -92,38 +92,11 @@ async function initMongo() {
   await db.collection('reviews').drop().catch(function() {});
   await db.collection('users').drop().catch(function() {});
 
-  // Коллекция пользователей
-  await db.collection('users').insertMany([
-    {
-      username: 'ivan_petrov', email: 'ivan@mail.ru', full_name: 'Иван Петров',
-      registered_at: new Date('2024-01-15'),
-      preferences: { genres: ['Фантастика', 'Боевик'], preferred_hall: 'IMAX' },
-      visit_count: 12,
-    },
-    {
-      username: 'maria_sid', email: 'maria@mail.ru', full_name: 'Мария Сидорова',
-      registered_at: new Date('2024-03-20'),
-      preferences: { genres: ['Драма', 'Мультфильм'], preferred_hall: 'Комфорт' },
-      visit_count: 8,
-    },
-    {
-      username: 'alex_k', email: 'alex@mail.ru', full_name: 'Алексей Козлов',
-      registered_at: new Date('2024-06-10'),
-      preferences: { genres: ['Боевик'], preferred_hall: 'Стандарт' },
-      visit_count: 5,
-    },
-    {
-      username: 'olga_n', email: 'olga@mail.ru', full_name: 'Ольга Новикова',
-      registered_at: new Date('2024-02-28'),
-      preferences: { genres: ['Фантастика', 'Драма'], preferred_hall: 'VIP' },
-      visit_count: 15,
-    },
-  ]);
-
-  // Создаём пустую коллекцию reviews
+  // Создаём пустые коллекции
+  await db.createCollection('users');
   await db.createCollection('reviews');
 
-  console.log('[MongoDB] Коллекции созданы: users (4 записи), reviews (пустая)');
+  console.log('[MongoDB] Коллекции созданы: users (пустая), reviews (пустая)');
   await client.close();
 }
 
@@ -132,7 +105,8 @@ async function initMongo() {
     await initPostgres();
     await initMongo();
     console.log('\n=== Все базы данных инициализированы! ===');
-    console.log('Залы созданы. Добавляйте фильмы через сайт — сеансы создадутся автоматически.');
+    console.log('Залы созданы. Добавляйте фильмы через сайт.');
+    console.log('Зарегистрируйтесь через /auth.html для создания пользователя.');
   } catch (err) {
     console.error('Ошибка инициализации:', err.message);
     process.exit(1);

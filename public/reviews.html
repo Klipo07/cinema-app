@@ -17,6 +17,7 @@
         <li><a href="/reviews.html" class="active">Отзывы</a></li>
         <li><a href="/stats.html">Статистика</a></li>
         <li><a href="/add-movie.html">+ Фильм</a></li>
+        <li><a href="/auth.html" id="nav-auth">Войти</a></li>
       </ul>
     </div>
   </nav>
@@ -46,6 +47,8 @@
     async function loadReviews(){var c=document.getElementById('reviews-list');var res=await safeFetch('/api/reviews');if(!res)return;try{var reviews=await res.json();c.innerHTML=reviews.map(function(r){return'<div class="review-card"><div class="review-header"><span><span class="author">'+r.author+'</span><span style="color:var(--text-dim);font-size:0.85rem;"> о фильме </span><a href="/movie.html?id='+r.movie_id+'" style="color:var(--accent);text-decoration:none;font-weight:600;">'+r.movie_title+'</a></span><span class="review-rating">&#9733; '+r.rating+'/10</span></div><p class="review-text">'+r.text+'</p><div class="review-footer"><span>'+new Date(r.created_at).toLocaleDateString('ru-RU')+'</span><span>&#9829; '+r.likes+'</span></div></div>';}).join('');}catch(e){c.innerHTML='<p class="alert alert-error">Ошибка загрузки</p>';}}
     async function submitReview(){var a=document.getElementById('review-alert');var sel=document.getElementById('r-movie');var mid=sel.value;var mt=sel.options[sel.selectedIndex]?sel.options[sel.selectedIndex].dataset.title:'';var author=document.getElementById('r-author').value;var rating=document.getElementById('r-rating').value;var text=document.getElementById('r-text').value;if(!mid||!author||!rating){a.innerHTML='<div class="alert alert-error">Укажите фильм, никнейм и оценку</div>';return;}try{var res=await fetch('/api/reviews',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({movie_id:mid,movie_title:mt,author:author,rating:rating,text:text})});if(res.ok){a.innerHTML='<div class="alert alert-success">Отзыв добавлен!</div>';document.getElementById('r-author').value='';document.getElementById('r-rating').value='';document.getElementById('r-text').value='';loadReviews();loadReviewStats();}else{var d=await res.json();a.innerHTML='<div class="alert alert-error">'+d.error+'</div>';}}catch(e){a.innerHTML='<div class="alert alert-error">Ошибка соединения</div>';}}
     loadMovies();loadReviewStats();loadReviews();
+    // Авторизация: подставить никнейм и ссылку в навигацию
+    (function(){var u=localStorage.getItem("cinema_user");var a=document.getElementById("nav-auth");if(u){var d=JSON.parse(u);if(a){a.textContent=d.username;a.href="/profile.html";}document.getElementById("r-author").value=d.username;document.getElementById("r-author").readOnly=true;}})();
   </script>
 </body>
 </html>

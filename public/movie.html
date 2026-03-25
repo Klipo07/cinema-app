@@ -17,6 +17,7 @@
         <li><a href="/reviews.html">Отзывы</a></li>
         <li><a href="/stats.html">Статистика</a></li>
         <li><a href="/add-movie.html">+ Фильм</a></li>
+        <li><a href="/auth.html" id="nav-auth">Войти</a></li>
       </ul>
     </div>
   </nav>
@@ -39,5 +40,6 @@
     async function loadReviews(){var c=document.getElementById('reviews-content');try{var res=await fetch('/api/reviews?movie_id='+movieId);var reviews=await res.json();if(reviews.length===0){c.innerHTML='<p style="color:var(--text-dim)">Пока нет отзывов</p>';return;}c.innerHTML=reviews.map(function(r){return'<div class="review-card"><div class="review-header"><span class="author">'+r.author+'</span><span class="review-rating">&#9733; '+r.rating+'/10</span></div><p class="review-text">'+r.text+'</p><div class="review-footer"><span>'+new Date(r.created_at).toLocaleDateString('ru-RU')+'</span><span>&#9829; '+r.likes+'</span></div></div>';}).join('');}catch(e){c.innerHTML='<p class="alert alert-error">Ошибка загрузки отзывов</p>';}}
     loadMovie();loadSessions();loadReviews();
   </script>
+<script>(function(){var u=localStorage.getItem("cinema_user");var a=document.getElementById("nav-auth");if(u&&a){var d=JSON.parse(u);a.textContent=d.username;a.href="/profile.html";}})();</script>
 </body>
 </html>
