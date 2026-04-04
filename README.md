@@ -4,10 +4,19 @@ Fullstack веб-приложение для управления кинотеа
 
 ## Скриншоты
 
-<!-- Убери эти комментарии когда загрузишь скрины в папку screenshots/ -->
-<!-- ![Главная страница](screenshots/main.png) -->
-<!-- ![Расписание сеансов](screenshots/schedule.png) -->
-<!-- ![Управление фильмами](screenshots/movies.png) -->
+
+![Вход в аккаунт](screenshots/1.png)
+![Регистрация](screenshots/2.png)
+![Личный кабинет](screenshots/3.png)
+![Добавление фильма](screenshots/4.png)
+![Добавление фильма через кинопоиск API](screenshots/5.png)
+![Добавление фильма](screenshots/6.png)
+![Афиша добавленных](screenshots/7.png)
+![Расписание сеансов](screenshots/8.png)
+![Купить билет](screenshots/9.png)
+![Отзывы](screenshots/10.png)
+![Статистики](screenshots/11.png)
+
 
 ## Возможности
 
